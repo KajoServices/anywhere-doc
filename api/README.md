@@ -1,3 +1,4 @@
+
 # Anywhere API calls
 ## Root call
 To see all available resources, go to: `/api/?format=json`
@@ -225,3 +226,28 @@ Buckets are sorted by timestamps of the intervals, ascending.
     	&agg_floodprob__interval=90m
 
 This indicates calculation of the average flood probability for each timestamp bucket. In the example above in each bucket (1.5hrs long) in addition to `doc_count` will contain `avg_flood_probability`.
+#### User feedback (PATCH)
+A registered user can leave a feedback for any particular tweet:
+
+    PATCH http://hostname/api/tweet/<tweetid>/?api_key=<user_api_key>&username=<username-or-email>
+    Content-Type: application/json
+    Connection: keep-alive
+    cache-control: no-cache
+    data = '{
+        "feedback": {
+            "classes": [
+	            "disaster",
+                "fire",
+                "forestfire"
+                ],
+            "relevant": true,
+            "note": "This has nothing to do with a flood: it is about forest fire!"
+        }
+    }'
+
+All the data specified in the `data` parameter will be added to all documents that satisfy the conditions, i.e. will have the same `<tweetid>` (there can be several documents in the system under the same `tweetid`, if, for example, there are several locations mentioned in the same tweet). The comment will automatically be stamped with a date-time mark and user's email. **Warning**: feedback don't have history, i.e. if a user can only *re-write* previously left comment, but cannot add a new one.  However, if a user wants to leave a feedback for a tweet that is already commented by someone else, a new comment will be added.
+
+The structure of the feedback itself is free-form for as long as user keep all valuable information in a form of dictionary under the `feedback` key. However, for the procedural simplicity we suggest keeping the following keys, when giving a feedback:
+*  `classes` - `<list>` of classes that are considered as relevant to the subject of a current tweet. This can either be a subset of original `tokens` key, or entirely new classes, or combination of both. By "class" here is meant a category or a keyword that somehow describes a topic of a given document. *Proposed implementation*: a checkbox'ed list of `tokens`, from which checked items become `classes` in the feedback.
+* `relevant` - `<bool>` indicating whether a tweet (in its entirety) is relevant to the topic. This key is optional, if tweet is considered to be relevant, while a user wants to specify a list of classes (see above) or simply to leave a note.
+* `note` - `<str>` (optional) comment on the reason of leaving feedback.
